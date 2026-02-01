@@ -33,7 +33,7 @@
 	Check for markdown files in project folder for relevant instructions on how to do this.
 	-->
 
-- [ ] Create and Run Task
+- [x] Create and Run Task
 	<!--
 	Verify that all previous steps have been completed.
 	Check https://code.visualstudio.com/docs/debugtest/tasks to determine if the project needs a task. If so, use the create_and_run_task to create and launch a task based on package.json, README.md, and project structure.
