@@ -206,3 +206,74 @@ export function suitToSymbol(suit: Suit): string {
 export function suitColorClass(suit: Suit): string {
   return suit === 'h' || suit === 'd' ? 'suit-red' : 'suit-black'
 }
+
+export function getBestHandLabel(cards: Card[]): string {
+  if (cards.length < 5) {
+    const counts = new Map<number, number>()
+    cards.forEach((card) => {
+      const value = RANK_VALUE[card.rank]
+      counts.set(value, (counts.get(value) ?? 0) + 1)
+    })
+    const values = Array.from(counts.values()).sort((a, b) => b - a)
+    if (values[0] === 2) return 'One Pair'
+    if (values[0] === 3) return 'Three of a Kind'
+    return 'High Card'
+  }
+
+  const combos = getCombos(cards.length)
+  let best = evaluate5(pick(cards, combos[0]))
+  for (let i = 1; i < combos.length; i += 1) {
+    const rank = evaluate5(pick(cards, combos[i]))
+    if (compareRanks(rank, best) > 0) best = rank
+  }
+  return rankToLabel(best[0])
+}
+
+const COMBO_CACHE = new Map<number, number[][]>()
+
+function getCombos(length: number): number[][] {
+  if (length === 7) return COMBOS_7_5
+  const cached = COMBO_CACHE.get(length)
+  if (cached) return cached
+
+  const indices = Array.from({ length }, (_, idx) => idx)
+  const combos: number[][] = []
+  const backtrack = (start: number, combo: number[]) => {
+    if (combo.length === 5) {
+      combos.push([...combo])
+      return
+    }
+    for (let i = start; i < indices.length; i += 1) {
+      combo.push(indices[i])
+      backtrack(i + 1, combo)
+      combo.pop()
+    }
+  }
+
+  backtrack(0, [])
+  COMBO_CACHE.set(length, combos)
+  return combos
+}
+
+function rankToLabel(rank: number): string {
+  switch (rank) {
+    case 8:
+      return 'Straight Flush'
+    case 7:
+      return 'Four of a Kind'
+    case 6:
+      return 'Full House'
+    case 5:
+      return 'Flush'
+    case 4:
+      return 'Straight'
+    case 3:
+      return 'Three of a Kind'
+    case 2:
+      return 'Two Pair'
+    case 1:
+      return 'One Pair'
+    default:
+      return 'High Card'
+  }
+}

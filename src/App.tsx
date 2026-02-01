@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
-import { calculateWinRate, type Card, type Rank, type Suit, suitColorClass, suitToSymbol } from './lib/poker'
+import { calculateWinRate, getBestHandLabel, type Card, type Rank, type Suit, suitColorClass, suitToSymbol } from './lib/poker'
 
 const RANK_KEYS = new Set(['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'])
 
@@ -173,6 +173,15 @@ function App() {
   const allCards = useMemo(() => {
     return [...compactCards(heroCards), ...compactCards(boardCards), ...knownOpponents.flatMap(compactCards)]
   }, [heroCards, boardCards, knownOpponents])
+
+  const stageCards = useMemo(() => {
+    return [...compactCards(heroCards), ...compactCards(boardCards)]
+  }, [heroCards, boardCards])
+
+  const bestHandLabel = useMemo(() => {
+    if (stageCards.length < 2) return '—'
+    return getBestHandLabel(stageCards)
+  }, [stageCards])
 
   const usedKeys = useMemo(() => new Set(allCards.map(toKey)), [allCards])
 
@@ -350,6 +359,11 @@ function App() {
           <div className="result-meta">
             {equity === null ? 'Enter your two hole cards to start.' : `Monte Carlo ${iterations.toLocaleString()} iterations`}
           </div>
+        </div>
+        <div className="result-card">
+          <div className="result-label">Best Hand Now</div>
+          <div className="result-value">{bestHandLabel}</div>
+          <div className="result-meta">Based on your hand + board cards.</div>
         </div>
         <div className="result-card">
           <div className="result-label">Cards Used</div>
