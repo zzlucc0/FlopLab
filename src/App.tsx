@@ -63,17 +63,18 @@ function CardInputGrid({
       }
 
       if (!rank) return
-      if (!selectedSuit) {
+      const resolvedSuit = selectedSuit ?? cards[activeIndex]?.suit ?? null
+      if (!resolvedSuit) {
         onError('Select a suit first.')
         return
       }
 
-      const index = cards[activeIndex] ? nextEmptyIndex(cards) : activeIndex
-      if (index === -1) return
+      const index = activeIndex
+      const wasEmpty = !cards[index]
       const nextCards = [...cards]
-      nextCards[index] = { rank, suit: selectedSuit }
-      const ok = onSetCard(index, { rank, suit: selectedSuit })
-      if (ok) {
+      nextCards[index] = { rank, suit: resolvedSuit }
+      const ok = onSetCard(index, { rank, suit: resolvedSuit })
+      if (ok && wasEmpty) {
         const next = nextEmptyIndex(nextCards)
         if (next !== -1) setActiveIndex(next)
       }
