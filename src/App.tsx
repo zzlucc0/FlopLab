@@ -103,6 +103,7 @@ function CardInputGrid({
               onClick={(event) => {
                 event.stopPropagation()
                 onClearAll()
+                setActiveIndex(0)
               }}
             >
               Clear
