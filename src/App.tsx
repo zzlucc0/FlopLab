@@ -3,6 +3,7 @@ import './App.css'
 import { calculateWinRate, getBestHandLabel, type Card, type Rank, type Suit, suitColorClass, suitToSymbol } from './lib/poker'
 
 const RANK_KEYS = new Set(['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'])
+const RANK_BUTTONS: Rank[] = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
 
 type CardSlot = Card | null
 
@@ -12,6 +13,7 @@ type CardInputGridProps = {
   cards: CardSlot[]
   onSetCard: (index: number, card: Card) => boolean
   onClearCard: (index: number) => void
+  onClearAll?: () => void
   activeInputId: string | null
   setActiveInputId: (id: string) => void
   onError: (message: string) => void
@@ -23,6 +25,7 @@ function CardInputGrid({
   cards,
   onSetCard,
   onClearCard,
+  onClearAll,
   activeInputId,
   setActiveInputId,
   onError,
@@ -31,6 +34,24 @@ function CardInputGrid({
   const [activeIndex, setActiveIndex] = useState(0)
   const [pendingTen, setPendingTen] = useState(false)
   const isActive = activeInputId === id
+
+  const handleRankInput = (rank: Rank) => {
+    const resolvedSuit = selectedSuit ?? cards[activeIndex]?.suit ?? null
+    if (!resolvedSuit) {
+      onError('Select a suit first.')
+      return
+    }
+
+    const index = activeIndex
+    const wasEmpty = !cards[index]
+    const nextCards = [...cards]
+    nextCards[index] = { rank, suit: resolvedSuit }
+    const ok = onSetCard(index, { rank, suit: resolvedSuit })
+    if (ok && wasEmpty) {
+      const next = nextEmptyIndex(nextCards)
+      if (next !== -1) setActiveIndex(next)
+    }
+  }
 
   useEffect(() => {
     if (!isActive) return
@@ -63,46 +84,46 @@ function CardInputGrid({
       }
 
       if (!rank) return
-      const resolvedSuit = selectedSuit ?? cards[activeIndex]?.suit ?? null
-      if (!resolvedSuit) {
-        onError('Select a suit first.')
-        return
-      }
-
-      const index = activeIndex
-      const wasEmpty = !cards[index]
-      const nextCards = [...cards]
-      nextCards[index] = { rank, suit: resolvedSuit }
-      const ok = onSetCard(index, { rank, suit: resolvedSuit })
-      if (ok && wasEmpty) {
-        const next = nextEmptyIndex(nextCards)
-        if (next !== -1) setActiveIndex(next)
-      }
+      handleRankInput(rank)
     }
 
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [activeIndex, cards, isActive, onClearCard, onError, onSetCard, pendingTen, selectedSuit])
+  }, [activeIndex, cards, handleRankInput, isActive, onClearCard, onError, onSetCard, pendingTen, selectedSuit])
 
   return (
     <section className={`card-panel ${isActive ? 'active' : ''}`} onClick={() => setActiveInputId(id)}>
       <div className="panel-header">
         <div className="panel-title">{label}</div>
-        <div className="suit-selector" role="group" aria-label="Suit selector">
-          {(['s', 'h', 'd', 'c'] as Suit[]).map((suit) => (
+        <div className="panel-actions">
+          {onClearAll ? (
             <button
-              key={suit}
               type="button"
-              className={`suit-button ${selectedSuit === suit ? 'selected' : ''} ${suitColorClass(suit)}`}
+              className="clear-button"
               onClick={(event) => {
                 event.stopPropagation()
-                setSelectedSuit(suit)
-                setActiveInputId(id)
+                onClearAll()
               }}
             >
-              {suitToSymbol(suit)}
+              Clear
             </button>
-          ))}
+          ) : null}
+          <div className="suit-selector" role="group" aria-label="Suit selector">
+            {(['s', 'h', 'd', 'c'] as Suit[]).map((suit) => (
+              <button
+                key={suit}
+                type="button"
+                className={`suit-button ${selectedSuit === suit ? 'selected' : ''} ${suitColorClass(suit)}`}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setSelectedSuit(suit)
+                  setActiveInputId(id)
+                }}
+              >
+                {suitToSymbol(suit)}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       <div className="slot-grid">
@@ -129,7 +150,14 @@ function CardInputGrid({
           </button>
         ))}
       </div>
-      <div className="panel-hint">Click a suit, then type the rank. Use Backspace to clear.</div>
+      <div className="rank-pad" role="group" aria-label="Rank keypad">
+        {RANK_BUTTONS.map((rank) => (
+          <button key={rank} type="button" className="rank-button" onClick={() => handleRankInput(rank)}>
+            {rank}
+          </button>
+        ))}
+      </div>
+      <div className="panel-hint">Click a suit, then type or tap the rank. Use Backspace to clear.</div>
     </section>
   )
 }
@@ -268,6 +296,16 @@ function App() {
     setError('')
   }
 
+  const handleClearAllHero = () => {
+    setHeroCards([null, null])
+    setError('')
+  }
+
+  const handleClearAllBoard = () => {
+    setBoardCards([null, null, null, null, null])
+    setError('')
+  }
+
   const handleClearOpponent = (handIndex: number, cardIndex: number) => {
     setKnownOpponents((prev) => {
       const next = prev.map((hand) => [...hand])
@@ -321,6 +359,7 @@ function App() {
         cards={heroCards}
         onSetCard={handleHeroSet}
         onClearCard={handleClearHero}
+        onClearAll={handleClearAllHero}
         activeInputId={activeInputId}
         setActiveInputId={setActiveInputId}
         onError={setError}
@@ -332,6 +371,7 @@ function App() {
         cards={boardCards}
         onSetCard={handleBoardSet}
         onClearCard={handleClearBoard}
+        onClearAll={handleClearAllBoard}
         activeInputId={activeInputId}
         setActiveInputId={setActiveInputId}
         onError={setError}
